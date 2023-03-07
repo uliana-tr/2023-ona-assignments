@@ -1,6 +1,6 @@
 ---
 title: "Hello, network!"
-output: html_document
+output: md_document
 date: "2023-03-07"
 ---
 
