@@ -1,0 +1,123 @@
+---
+title: "Exercise_1"
+output: html_document
+date: "2023-03-14"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## STEP 2. Open the file in RStudio as a text file to clean up for import + import with `read_csv()`
+
+Import the file using read_csv() function:
+
+```{r Step 2, results = 'hide'}
+library(readr)
+my_connections <- read_csv("C:/Users/ulyan/OneDrive - McGill University/Documents/MMA/Winter II 2023/Org Network Analysis/Exercise 1/Basic_LinkedInDataExport_03-09-2023/Connections.csv")
+```
+
+## STEP 3. Get the count of your contacts by their current employer + total count
+
+Import library:
+
+```{r Step 3.1, results = FALSE}
+library(tidyverse)
+library(dplyr)
+```
+
+Count of contacts by current employer (excluding NA rows):
+
+```{r Step 3.2}
+contacts_by_employer <- drop_na(my_connections, "Company")
+contacts_by_employer_count <- nrow(contacts_by_employer)
+
+# Print the contacts by employer
+print(contacts_by_employer_count)
+```
+
+Total count of contacts:
+
+```{r Step 3.3}
+total_count <- nrow(my_connections)
+
+# Print the total count
+print(total_count)
+
+```
+
+
+## STEP 4. Create nodes and edges dataframes to use with igraph
+
+Install packages:
+
+```{r Step 4.1}
+library(tidygraph)
+library(igraph)
+```
+
+
+# Pre-process data
+
+Drop the "Email Address" column:
+
+```{r Step 4.2}
+my_connections <- my_connections %>% select(-"Email Address")
+```
+
+
+Drop any rows with missing values in the remaining columns:
+
+```{r Step 4.3}
+my_connections <- my_connections %>% drop_na()
+```
+
+
+# Create a tidygraph object from the connections data
+
+```{r Step 4.4}
+my_connections_graph <- my_connections %>%
+  as_tbl_graph(nodes = c("First Name", "Last Name", "Company", "Position"),
+               edges = c("First Name", "Last Name"),
+               node_key = "name")
+```
+
+
+
+# Extract the nodes and edges dataframes from the tidygraph object
+
+Note: 'nodes_df' first lists all given names and then all last names. This also causes issues with 'edges_df'. I couldn't figure out how to fix this. 
+
+```{r Step 4.5}
+nodes_df <- my_connections_graph %>%
+  activate(nodes) %>%
+  as_tibble()
+
+edges_df <- my_connections_graph %>%
+  activate(edges) %>%
+  as_tibble()
+```
+
+Create a new edges dataframe with name values in place of indexes:
+
+```{r Step 4.6}
+edges_df2 <- edges_df %>%
+  mutate(from = nodes_df$name[from],
+         to = nodes_df$name[to])
+```
+
+## STEP 5. Plot the resulting network
+
+Create an igraph object from the nodes and edges dataframes:
+
+```{r Step 5.1}
+my_igraph <- graph_from_data_frame(d = edges_df2, vertices = nodes_df)
+```
+
+
+Plot the resulting network:
+
+```{r Step 5.2}
+plot(my_igraph)
+```
+Note: Because of the issues with 'nodes_df' and 'edges_df', plot is displayed incorrectly and looks very busy.
