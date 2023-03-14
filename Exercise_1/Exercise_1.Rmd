@@ -14,7 +14,7 @@ Import the file using read_csv() function:
 
 ```{r Step 2, results = 'hide'}
 library(readr)
-my_connections <- read_csv("C:/Users/ulyan/OneDrive - McGill University/Documents/MMA/Winter II 2023/Org Network Analysis/Exercise 1/Basic_LinkedInDataExport_03-09-2023/Connections.csv")
+my_connections <- read_csv("Connections.csv")
 ```
 
 ## STEP 3. Get the count of your contacts by their current employer + total count
