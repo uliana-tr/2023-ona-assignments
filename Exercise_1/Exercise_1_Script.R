@@ -2,7 +2,7 @@
 
 # Import the file using read_csv() function
 library(readr)
-my_connections <- read_csv("C:/Users/ulyan/OneDrive - McGill University/Documents/MMA/Winter II 2023/Org Network Analysis/Exercise 1/Basic_LinkedInDataExport_03-09-2023/Connections.csv")
+my_connections <- read_csv("Connections.csv")
 
 
 
