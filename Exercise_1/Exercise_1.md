@@ -6,7 +6,7 @@ Import the file using read\_csv() function:
 
     ## Warning: package 'readr' was built under R version 4.2.2
 
-    my_connections <- read_csv("C:/Users/ulyan/OneDrive - McGill University/Documents/MMA/Winter II 2023/Org Network Analysis/Exercise 1/Basic_LinkedInDataExport_03-09-2023/Connections.csv")
+    my_connections <- read_csv("Connections.csv")
 
     ## Rows: 318 Columns: 6
     ## ── Column specification ────────────────────────────────────────────────────────
