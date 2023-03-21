@@ -1,6 +1,6 @@
 ---
 title: "Exercise_2"
-output: md_document
+output: pdf_document
 date: "2023-03-21"
 ---
 
@@ -128,8 +128,21 @@ plot(seat_adjacency_graph, vertex.size = 30, vertex.label = vertex_labels,
      main = "Seat Adjacency Network Graph with Centrality Values")
 
 # Add color legend
-legend("bottomleft", legend = c("Low centrality", "High centrality"), 
+legend("bottomleft", legend = c("High centrality", "Low centrality"), 
        fill = c(color_palette[1], color_palette[10]), title = "Betweenness centrality",
        x.intersp = 0.7, y.intersp = 0.7, inset = 0.01)
 ```
 
+
+
+## Conclusion and Insights
+
+This exercise involves a practical application of network analysis to determine the most socially beneficial seat on a bus based on adjacency rules. The analysis shows that the most central seat in the graph, which has the highest degree, closeness, and betweenness centralities, is seat B. This means that individuals sitting in seat B are likely to have the greatest social benefit in terms of communicating with adjacent seats.
+
+Degree centrality is a measure of the number of edges that are connected to a node, and in this case, seat B has the highest degree centrality, indicating that it has the most connections with other seats in the graph. This means that individuals sitting in seat B can easily communicate with other passengers in the adjacent seats, thereby increasing their social benefit.
+
+Closeness centrality is a measure of how close a node is to other nodes in the graph. In this case, seat B has a relatively high closeness centrality, meaning that it is well connected to other seats in the graph. Therefore, individuals sitting in seat B are likely to be in close proximity to other passengers and can communicate with them more efficiently.
+
+Finally, betweenness centrality measures the number of shortest paths that pass through a node. Seat B has the highest betweenness centrality in the graph, indicating that it is a hub for communication between other seats. Therefore, individuals sitting in seat B can serve as a bridge between other passengers, increasing their social benefit.
+
+In conclusion, the insights derived from this exercise show that seat B is the most socially beneficial seat on the bus based on the adjacency rules. This is because seat B has the highest degree, closeness, and betweenness centralities. Therefore, sitting in seat B increases the likelihood of having meaningful social interactions with adjacent passengers, leading to a greater sense of social connectedness and possibly enhancing the overall travel experience. This exercise also highlights the practical applications of network analysis and can be applied to other situations where social networks are involved. For example, in a workplace, identifying the most central employees can help improve collaboration and communication within the organization. Similarly, in a social setting, identifying central individuals can help individuals build stronger connections and enhance their social capital.
