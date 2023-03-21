@@ -1,12 +1,6 @@
 ---
 title: "Exercise_2"
-<<<<<<< HEAD
-output:
-  pdf_document: default
-  md_document: default
-=======
-output: pdf_document
->>>>>>> a89101eec048c21e66851a23c609888bd3e49158
+output: md_document
 date: "2023-03-21"
 ---
 
