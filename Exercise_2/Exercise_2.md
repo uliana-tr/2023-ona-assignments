@@ -140,8 +140,7 @@ may not always allow for the optimal seating choice.
     # Customize vertex labels with centrality values
     vertex_labels <- paste(V(seat_adjacency_graph)$name,
                            "\nDegree: ", V(seat_adjacency_graph)$degree,
-                           "\nCloseness: ", round(V(seat_adjacency_graph)$closeness, 4),
-                           "\nBetweenness: ", round(V(seat_adjacency_graph)$betweenness, 2))
+                           "\nCloseness: ", round(V(seat_adjacency_graph)$closeness, 4))
 
     # Normalize betweenness centrality values
     scaled_betweenness <- scale(V(seat_adjacency_graph)$betweenness)
