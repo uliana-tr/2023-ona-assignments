@@ -1,6 +1,8 @@
 ---
 title: "Exercise_2"
-output: pdf_document
+output:
+  pdf_document: default
+  md_document: default
 date: "2023-03-21"
 ---
 
