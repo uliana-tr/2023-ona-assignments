@@ -182,33 +182,9 @@ print(gender_plot)
 print(race_plot)
 print(tenure_plot)
 
-# We can make the following observations about the two workgroups:
-
-# Gender Distribution:
-# Workgroup 161 has 37,275 female and 39,554 male examiners, with 12,966 examiners having unknown gender.
-# Workgroup 162 has 51,412 female and 55,380 male examiners, with 34,598 examiners having unknown gender.
-
-# In both workgroups, the number of male examiners is slightly higher than the number of female examiners. However, there are also a considerable number of examiners with unknown gender in both workgroups.
-
-# Race Distribution:
-# Workgroup 161 has 1,843 Hispanic, 2,452 Black, 19,528 Asian, and 65,972 White examiners.
-# Workgroup 162 has 3,884 Hispanic, 11,023 Black, 35,442 Asian, and 91,041 White examiners.
-
-# In both workgroups, the majority of examiners are White, followed by Asian, Black, and Hispanic examiners. Workgroup 162 has a larger number of examiners for each race compared to Workgroup 161.
-
-# Tenure Distribution (grouped by years):
-# Both workgroups show a similar trend in tenure distribution, with the number of examiners generally increasing as the tenure in years increases.
-# For both workgroups, the largest number of examiners fall into the 17-year tenure category. There are 32,366 examiners in Workgroup 161 and 72,199 examiners in Workgroup 162 with a 17-year tenure.
-# A considerable number of examiners in both workgroups have unknown tenure, 3,731 in Workgroup 161 and 4,389 in Workgroup 162.
-
-
-# In summary, the two workgroups have similar trends in terms of examiners' demographics. Both workgroups have slightly more male than female examiners, a majority of White examiners followed by Asian, Black, and Hispanic examiners, and a similar distribution of tenure years with the largest number of examiners having a 17-year tenure. Workgroup 162 has a larger number of examiners for each demographic category compared to Workgroup 161.
-
 
 
 ### 3. Create advice networks from `edges_sample` and calculate centrality scores for examiners in selected workgroups
-
-# For this exercise, let's use Degree Centrality and Betweenness Centrality. Degree Centrality measures the number of direct connections an examiner has, while Betweenness Centrality measures the extent to which an examiner lies on the shortest paths between other examiners in the network. Both measures can help us identify influential or well-connected examiners in the network.
 
 # Load required libraries
 library(igraph)
@@ -250,6 +226,12 @@ plot(g_filtered,
 
 ## Calculate centrality scores for examiners in selected workgroups
 
+# Create a mapping between examiner_id and workgroup in the applications dataset
+examiner_workgroup_mapping <- applications %>% 
+  select(examiner_id, workgroup) %>% 
+  mutate(examiner_id = as.numeric(examiner_id)) %>% # Convert examiner_id to numeric
+  distinct()
+
 # Calculate Degree Centrality and Betweenness Centrality
 degree_centrality <- degree(g_filtered, mode = "all")
 betweenness_centrality <- betweenness(g_filtered, directed = TRUE)
@@ -260,15 +242,129 @@ V(g_filtered)$betweenness_centrality <- betweenness_centrality
 
 # Merge centrality scores with the examiners' characteristics
 centrality_scores <- data.frame(
-  examiner_id = V(g_filtered)$name,
+  examiner_id = as.numeric(V(g_filtered)$name), # Convert examiner_id to numeric
   workgroup = V(g_filtered)$workgroup,
   degree_centrality = V(g_filtered)$degree_centrality,
   betweenness_centrality = V(g_filtered)$betweenness_centrality
 )
 
 applications_centrality <- applications %>%
-  select(examiner_id, gender, race, tenure_days) %>%
+  select(examiner_id, gender, race, tenure_days) %>% 
+  mutate(examiner_id = as.numeric(examiner_id)) %>% # Convert examiner_id to numeric
   inner_join(centrality_scores, by = "examiner_id")
 
 # Examine the results
 print(applications_centrality)
+
+
+## Characterize and discuss the relationship between centrality and other examiners’ characteristics
+
+# TENURE
+# Calculate correlations between centrality measures and tenure_days
+correlation_results <- applications_centrality %>%
+  select(degree_centrality, betweenness_centrality, tenure_days) %>%
+  cor(use = "pairwise.complete.obs")
+
+# Print the correlation results
+print(correlation_results)
+
+# Plot scatter plots to visualize the relationships
+scatter_plot_degree_tenure <- ggplot(applications_centrality, aes(x = tenure_days, y = degree_centrality)) +
+  geom_point(alpha = 0.5) +
+  labs(title = "Scatter Plot: Degree Centrality vs Tenure",
+       x = "Tenure (days)",
+       y = "Degree Centrality") +
+  theme_minimal()
+
+scatter_plot_betweenness_tenure <- ggplot(applications_centrality, aes(x = tenure_days, y = betweenness_centrality)) +
+  geom_point(alpha = 0.5) +
+  labs(title = "Scatter Plot: Betweenness Centrality vs Tenure",
+       x = "Tenure (days)",
+       y = "Betweenness Centrality") +
+  theme_minimal()
+
+# Display the scatter plots
+print(scatter_plot_degree_tenure)
+print(scatter_plot_betweenness_tenure)
+
+
+# RACE/GENDER
+
+# Convert race and gender to numerical values (dummy coding)
+dummy_coded_data <- applications_centrality %>%
+  mutate(
+    race_num = as.numeric(factor(race, levels = unique(race))),
+    gender_num = as.numeric(factor(gender, levels = unique(gender)))
+  )
+
+# Calculate the correlation matrix
+correlation_matrix <- cor(dummy_coded_data[, c("degree_centrality", "betweenness_centrality", "race_num", "gender_num")], use = "complete.obs")
+
+# Print the correlation matrix
+print(correlation_matrix)
+
+
+# Add 'gender_num' and 'race_num' columns to the dataframe
+applications_centrality <- applications_centrality %>%
+  mutate(
+    gender_num = case_when(
+      gender == "male" ~ 1,
+      gender == "female" ~ 2,
+      TRUE ~ NA_real_
+    ),
+    race_num = case_when(
+      race == "hispanic" ~ 1,
+      race == "black" ~ 2,
+      race == "asian" ~ 3,
+      race == "white" ~ 4,
+      TRUE ~ NA_real_
+    )
+  )
+
+# Scatter plot for Degree Centrality vs. Gender
+degree_gender_plot <- applications_centrality %>%
+  ggplot(aes(x = gender_num, y = degree_centrality)) +
+  geom_point(alpha = 0.1) +
+  labs(title = "Degree Centrality vs. Gender",
+       x = "Gender (1 = Male, 2 = Female)",
+       y = "Degree Centrality") +
+  theme_minimal()
+
+# Display plot
+print(degree_gender_plot)
+
+# Scatter plot for Degree Centrality vs. Race
+degree_race_plot <- applications_centrality %>%
+  ggplot(aes(x = race_num, y = degree_centrality)) +
+  geom_point(alpha = 0.1) +
+  labs(title = "Degree Centrality vs. Race",
+       x = "Race (1 = Hispanic, 2 = Black, 3 = Asian, 4 = White)",
+       y = "Degree Centrality") +
+  theme_minimal()
+
+# Display plot
+print(degree_race_plot)
+
+# Scatter plot for Betweenness Centrality vs. Gender
+betweenness_gender_plot <- applications_centrality %>%
+  ggplot(aes(x = gender_num, y = betweenness_centrality)) +
+  geom_point(alpha = 0.1) +
+  labs(title = "Betweenness Centrality vs. Gender",
+       x = "Gender (1 = Male, 2 = Female)",
+       y = "Betweenness Centrality") +
+  theme_minimal()
+
+# Display plot
+print(betweenness_gender_plot)
+
+# Scatter plot for Betweenness Centrality vs. Race
+betweenness_race_plot <- applications_centrality %>%
+  ggplot(aes(x = race_num, y = betweenness_centrality)) +
+  geom_point(alpha = 0.1) +
+  labs(title = "Betweenness Centrality vs. Race",
+       x = "Race (1 = Hispanic, 2 = Black, 3 = Asian, 4 = White)",
+       y = "Betweenness Centrality") +
+  theme_minimal()
+
+# Display plot
+print(betweenness_race_plot)

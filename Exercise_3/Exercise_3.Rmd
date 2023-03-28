@@ -3,8 +3,8 @@ title: "Exercise 3: Examiners' Demographics and Advice Networks"
 author: "Liliana Tretyakova"
 date: "March 27, 2023"
 output:
-  pdf_document: default
   md_document: default
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -24,7 +24,7 @@ In this assignment, we analyze the demographics of examiners in two selected wor
 
 3. Create advice networks from edges_sample and calculate centrality scores for examiners in the selected workgroups.
 
-```{r into}
+```{r into, message=FALSE, warning=FALSE}
 # Load required libraries
 library(tidyverse)
 library(lubridate)
@@ -44,7 +44,7 @@ edges_sample <- read_csv("C:/Users/ulyan/OneDrive - McGill University/Documents/
 First, we will add the gender, race, and tenure variables to the examiners' data.
 
 Here's how we can add gender variable:
-```{r add_gender}
+```{r add_gender, warning=FALSE}
 # Get unique examiner first names
 examiner_names <- applications %>% distinct(examiner_name_first)
 
@@ -60,7 +60,7 @@ applications <- applications %>%
 ```
 
 Now, let's add race variable:
-```{r add_race}
+```{r add_race, warning=FALSE}
 # Get unique examiner last names
 examiner_surnames <- applications %>% select(surname = examiner_name_last) %>% distinct()
 
@@ -85,7 +85,7 @@ applications <- applications %>%
 ```
 
 Finally, we estimate and add tenure variable:
-```{r add_tenure}
+```{r add_tenure, warning=FALSE}
 # Extract examiner IDs and application dates
 examiner_dates <- applications %>% 
   select(examiner_id, filing_date, appl_status_date)
@@ -113,15 +113,19 @@ Now that we have added gender, race, and tenure variables to the examiners' data
 
 ### Select and Compare Demographics of Two Workgroups
 
-First, we will select two workgroups and analyze their demographics by generating summary statistics and plots.
+In this section of the exercise, we analyze and compare the demographics of two selected workgroups, Workgroup 161 and Workgroup 162. We first generate summary statistics and then visualize the demographics using bar plots. The main demographics of interest are gender, race, and tenure.
 
-```{r select_workgroups}
+```{r select_workgroups, warning=FALSE}
 # Choose workgroups
 workgroup1 <- "161"
 workgroup2 <- "162"
 ```
 
-We will start with summary statistics:
+
+# Summary statistics
+
+We start by computing the summary statistics for the demographics of each workgroup. This includes the average tenure in days, the proportion of female examiners, and the total count of examiners in each workgroup.
+
 ```{r summary_statistics}
 # Filter the applications dataset for the chosen workgroups
 workgroups_data <- applications %>%
@@ -142,7 +146,10 @@ print(summary_stats)
 ```
 
 
-Next, let's take a look at demographics in workgroups:
+## Demographic Distribution Tables
+
+Next, we will examine the demographic distributions of the workgroups in more detail by generating tables for gender, race, and tenure distributions.
+
 ```{r workgroups_demographics}
 # Filter the applications dataset for the chosen workgroups
 workgroups_data <- applications %>%
@@ -173,7 +180,10 @@ print(race_distribution)
 print(tenure_distribution, n=37)
 ```
 
-Now, let's visualize the demographics of the selected workgroups using bar plots.
+
+## Demographic Distribution Plots
+
+To visualize the demographic distributions of the workgroups, we will create bar plots for gender and race distributions, as well as a histogram for the tenure distribution.
 
 ```{r gender_plot}
 # Plot for gender distribution
@@ -220,27 +230,17 @@ tenure_plot <- workgroups_data %>%
 print(tenure_plot)
 ```
 
-We can make the following observations about the two workgroups:
-
-Gender Distribution:
-- Workgroup 161 has 37,275 female and 39,554 male examiners, with 12,966 examiners having unknown gender.
-- Workgroup 162 has 51,412 female and 55,380 male examiners, with 34,598 examiners having unknown gender.
-
-In both workgroups, the number of male examiners is slightly higher than the number of female examiners. However, there are also a considerable number of examiners with unknown gender in both workgroups.
-
-Race Distribution:
-- Workgroup 161 has 1,843 Hispanic, 2,452 Black, 19,528 Asian, and 65,972 White examiners.
-- Workgroup 162 has 3,884 Hispanic, 11,023 Black, 35,442 Asian, and 91,041 White examiners.
-
-In both workgroups, the majority of examiners are White, followed by Asian, Black, and Hispanic examiners. Workgroup 162 has a larger number of examiners for each race compared to Workgroup 161.
-
-Tenure Distribution (grouped by years):
-- Both workgroups show a similar trend in tenure distribution, with the number of examiners generally increasing as the tenure in years increases.
-- For both workgroups, the largest number of examiners fall into the 17-year tenure category. There are 32,366 examiners in Workgroup 161 and 72,199 examiners in Workgroup 162 with a 17-year tenure.
-- A considerable number of examiners in both workgroups have unknown tenure, 3,731 in Workgroup 161 and 4,389 in Workgroup 162.
 
 
-In summary, the two workgroups have similar trends in terms of examiners' demographics. Both workgroups have slightly more male than female examiners, a majority of White examiners followed by Asian, Black, and Hispanic examiners, and a similar distribution of tenure years with the largest number of examiners having a 17-year tenure. Workgroup 162 has a larger number of examiners for each demographic category compared to Workgroup 161.
+In comparing workgroups 161 and 162 on examiners' demographics, we can observe the following:
+
+1. Gender Distribution: Both workgroups have slightly more male examiners than female examiners. However, there are also a considerable number of examiners with unknown gender in both workgroups.
+
+2. Race Distribution: In both workgroups, the majority of examiners are White, followed by Asian, Black, and Hispanic examiners. Workgroup 162 has a larger number of examiners for each race compared to Workgroup 161.
+
+3. Tenure Distribution: Both workgroups show a similar trend in tenure distribution, with the number of examiners generally increasing as the tenure in years increases. For both workgroups, the largest number of examiners fall into the 17-year tenure category. A considerable number of examiners in both workgroups have unknown tenure.
+
+In summary, Workgroups 161 and 162 have similar demographic trends. The main difference between them is that Workgroup 162 has a larger number of examiners for each demographic category compared to Workgroup 161.
 
 
 
@@ -281,11 +281,14 @@ plot(g_filtered,
      main = "Advice Networks for Workgroups 161 and 162")
 ```
 
+
+## Calculate centralities 
+
 Now, we will calculate centrality scores for examiners in selected workgroups.
 
 Since we need to ensure examiner_id has the same data type in both data frames, we will convert examiner_id to numeric in examiner_workgroup_mapping.
 
-```{r mapping}
+```{r mapping, echo = FALSE}
 # Create a mapping between examiner_id and workgroup in the applications dataset
 examiner_workgroup_mapping <- applications %>% 
   select(examiner_id, workgroup) %>% 
@@ -293,8 +296,13 @@ examiner_workgroup_mapping <- applications %>%
   distinct()
 ```
 
+For this exercise, we have chosen to use Degree Centrality and Betweenness Centrality as our measures of centrality. Our choice is based on the following justifications:
 
-For this exercise, let's use Degree Centrality and Betweenness Centrality. Degree Centrality measures the number of direct connections an examiner has, while Betweenness Centrality measures the extent to which an examiner lies on the shortest paths between other examiners in the network. Both measures can help us identify influential or well-connected examiners in the network.
+1. Degree Centrality measures the number of direct connections an examiner has within the network. A higher degree centrality indicates that an examiner is directly connected to more examiners, which could imply that they collaborate frequently or share information with a large number of colleagues. As a result, examiners with high degree centrality can be considered influential or well-connected within the workgroup. This measure provides a straightforward way to quantify the local importance of an examiner in the network.
+
+2. Betweenness Centrality, on the other hand, measures the extent to which an examiner lies on the shortest paths between other examiners in the network. Examiners with high betweenness centrality act as bridges or intermediaries between other examiners, connecting different parts of the network. This measure provides insight into the global importance of an examiner, as it considers their role in the overall network structure. High betweenness centrality may indicate that an examiner is crucial for communication or information flow within the workgroup.
+
+By combining both Degree Centrality and Betweenness Centrality, we can gain a comprehensive understanding of an examiner's influence and connectivity within the workgroup. While degree centrality focuses on an examiner's local connections, betweenness centrality highlights their global role in the network. Using these measures together allows us to identify influential examiners in the network and better understand the overall structure and dynamics of the workgroup.
 
 ```{r calculate_centrality}
 # Calculate Degree Centrality and Betweenness Centrality
@@ -321,6 +329,159 @@ applications_centrality <- applications %>%
 # Examine the results
 print(applications_centrality)
 ```
+
+
+## Characterize and discuss the relationship between centrality and other examiners’ characteristics
+
+In this section, we investigate the relationship between centrality measures (Degree and Betweenness Centrality) and examiners' characteristics such as tenure, race, and gender.
+
+
+# Tenure 
+
+First, we calculate the correlations between centrality measures (Degree and Betweenness Centrality) and tenure_days.
+```{r tenure_vs_centrality_cor}
+# Calculate correlations between centrality measures and tenure_days
+correlation_results <- applications_centrality %>%
+  select(degree_centrality, betweenness_centrality, tenure_days) %>%
+  cor(use = "pairwise.complete.obs")
+
+# Print the correlation results
+print(correlation_results)
+```
+
+Then, we visualize the relationships using scatter plots.
+```{r tenure_vs_centrality_plot}
+# Plot scatter plots to visualize the relationships
+scatter_plot_degree_tenure <- ggplot(applications_centrality, aes(x = tenure_days, y = degree_centrality)) +
+  geom_point(alpha = 0.5) +
+  labs(title = "Scatter Plot: Degree Centrality vs Tenure",
+       x = "Tenure (days)",
+       y = "Degree Centrality") +
+  theme_minimal()
+
+scatter_plot_betweenness_tenure <- ggplot(applications_centrality, aes(x = tenure_days, y = betweenness_centrality)) +
+  geom_point(alpha = 0.5) +
+  labs(title = "Scatter Plot: Betweenness Centrality vs Tenure",
+       x = "Tenure (days)",
+       y = "Betweenness Centrality") +
+  theme_minimal()
+
+# Display the scatter plots
+print(scatter_plot_degree_tenure)
+print(scatter_plot_betweenness_tenure)
+```
+
+Based on the correlation results, we can make the following conclusions:
+
+1. Degree Centrality and Tenure Days: There is a weak positive correlation (0.0518) between degree centrality and tenure days. This suggests that examiners with longer tenure may have slightly more connections within the workgroup, possibly due to their longer presence and more interactions within the organization.
+
+2. Betweenness Centrality and Tenure Days: There is an even weaker positive correlation (0.0387) between betweenness centrality and tenure days. This implies that examiners with longer tenure might be slightly more likely to lie on the shortest paths between other examiners, although the effect is not strong.
+
+3. Degree Centrality and Betweenness Centrality: There is a moderate positive correlation (0.4518) between degree centrality and betweenness centrality. This indicates that examiners with a higher degree centrality (more direct connections) are more likely to have a higher betweenness centrality (lie on more shortest paths between other examiners). This is expected, as more connected individuals tend to have a higher chance of being on the shortest paths between others in the network.
+
+Overall, the correlations between centrality measures and tenure days are weak, suggesting that the relationship between examiners' tenure and their centrality in the network is not strong. However, the positive correlation between degree centrality and betweenness centrality indicates that these two centrality measures are related, as expected.
+
+
+# Race and gender
+
+Next, we examine the relationships between centrality measures and race or gender. First, we convert race and gender to numerical values (dummy coding). Then, we calculate the correlation matrix and visualize the relationships using scatter plots.
+
+```{r race_gender_vs_centrality_cor}
+# Convert race and gender to numerical values (dummy coding)
+dummy_coded_data <- applications_centrality %>%
+  mutate(
+    race_num = as.numeric(factor(race, levels = unique(race))),
+    gender_num = as.numeric(factor(gender, levels = unique(gender)))
+  )
+
+# Calculate the correlation matrix
+correlation_matrix <- cor(dummy_coded_data[, c("degree_centrality", "betweenness_centrality", "race_num", "gender_num")], use = "complete.obs")
+
+# Print the correlation matrix
+print(correlation_matrix)
+```
+
+Based on the correlation matrix output, the relationships between centrality measures (degree and betweenness) and gender or race can be characterized as follows:
+
+1. Degree centrality and race: There is a weak positive correlation (0.11384053) between degree centrality and race. This suggests that as the race variable increases in value, degree centrality tends to increase slightly. However, the relationship is weak and might not be practically significant.
+
+2. Degree centrality and gender: There is a weak positive correlation (0.12165935) between degree centrality and gender. This suggests that as the gender variable increases in value, degree centrality tends to increase slightly. Similar to the relationship between degree centrality and race, the relationship is weak and might not be practically significant.
+
+3. Betweenness centrality and race: There is a weak positive correlation (0.22670001) between betweenness centrality and race. This suggests that as the race variable increases in value, betweenness centrality tends to increase slightly. The relationship is weak but slightly stronger compared to the relationships between degree centrality and race or gender.
+
+4. Betweenness centrality and gender: There is a weak positive correlation (0.12613569) between betweenness centrality and gender. This suggests that as the gender variable increases in value, betweenness centrality tends to increase slightly. The relationship is weak and might not be practically significant.
+
+In summary, the relationships between centrality measures and gender or race are weak. This indicates that the centrality of examiners in the network might not be strongly influenced by their race or gender. However, it's essential to note that correlation does not imply causation, and other factors might be contributing to the observed relationships.
+
+
+Let's visualize these relationships:
+```{r race_gender_vs_centrality_plot}
+# Add 'gender_num' and 'race_num' columns to the dataframe
+applications_centrality <- applications_centrality %>%
+  mutate(
+    gender_num = case_when(
+      gender == "male" ~ 1,
+      gender == "female" ~ 2,
+      TRUE ~ NA_real_
+    ),
+    race_num = case_when(
+      race == "hispanic" ~ 1,
+      race == "black" ~ 2,
+      race == "asian" ~ 3,
+      race == "white" ~ 4,
+      TRUE ~ NA_real_
+    )
+  )
+
+# Scatter plot for Degree Centrality vs. Gender
+degree_gender_plot <- applications_centrality %>%
+  ggplot(aes(x = gender_num, y = degree_centrality)) +
+  geom_point(alpha = 0.1) +
+  labs(title = "Degree Centrality vs. Gender",
+       x = "Gender (1 = Male, 2 = Female)",
+       y = "Degree Centrality") +
+  theme_minimal()
+
+# Display plot
+print(degree_gender_plot)
+
+# Scatter plot for Degree Centrality vs. Race
+degree_race_plot <- applications_centrality %>%
+  ggplot(aes(x = race_num, y = degree_centrality)) +
+  geom_point(alpha = 0.1) +
+  labs(title = "Degree Centrality vs. Race",
+       x = "Race (1 = Hispanic, 2 = Black, 3 = Asian, 4 = White)",
+       y = "Degree Centrality") +
+  theme_minimal()
+
+# Display plot
+print(degree_race_plot)
+
+# Scatter plot for Betweenness Centrality vs. Gender
+betweenness_gender_plot <- applications_centrality %>%
+  ggplot(aes(x = gender_num, y = betweenness_centrality)) +
+  geom_point(alpha = 0.1) +
+  labs(title = "Betweenness Centrality vs. Gender",
+       x = "Gender (1 = Male, 2 = Female)",
+       y = "Betweenness Centrality") +
+  theme_minimal()
+
+# Display plot
+print(betweenness_gender_plot)
+
+# Scatter plot for Betweenness Centrality vs. Race
+betweenness_race_plot <- applications_centrality %>%
+  ggplot(aes(x = race_num, y = betweenness_centrality)) +
+  geom_point(alpha = 0.1) +
+  labs(title = "Betweenness Centrality vs. Race",
+       x = "Race (1 = Hispanic, 2 = Black, 3 = Asian, 4 = White)",
+       y = "Betweenness Centrality") +
+  theme_minimal()
+
+# Display plot
+print(betweenness_race_plot)
+```
+
 
 
 In this analysis, we have successfully loaded the data, added demographic variables, selected two workgroups, compared their demographics, and created advice networks with centrality scores for the examiners. This information can be used to explore the relationships between examiners' demographics and their advice networks.
