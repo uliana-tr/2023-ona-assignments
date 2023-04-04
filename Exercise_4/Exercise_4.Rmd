@@ -1,0 +1,280 @@
+---
+title: "Exercise_4"
+author: "Liliana Tretyakova"
+date: "2023-04-04"
+output: md_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Analysis of patent examiner network and processing time
+
+This R markdown file presents an analysis of patent examiner network and its relationship with processing time of patent applications. The data used in this analysis includes a sample of patent application data and network data of patent examiners.
+
+
+## Prepare
+
+First, we load the required libraries such as tidyverse, lubridate, arrow, gender, and wru. Then, we load the data into R from the local directory.
+
+```{r prep_1, message=FALSE, warning=FALSE}
+# Load required libraries
+library(tidyverse)
+library(lubridate)
+library(arrow)
+library(gender)
+library(wru)
+
+# Load data
+applications <- read_parquet("C:/Users/ulyan/OneDrive - McGill University/Documents/MMA/Winter II 2023/Org Network Analysis/Exercise 3/672_project_data/app_data_sample.parquet")
+edges_sample <- read_csv("C:/Users/ulyan/OneDrive - McGill University/Documents/MMA/Winter II 2023/Org Network Analysis/Exercise 3/672_project_data/edges_sample.csv")
+
+```
+
+
+#### Add gender variable
+
+We predict gender based on the first name of each examiner using the gender library. We join the predicted gender data back to the main applications dataset.
+
+```{r add_gender, warning=FALSE}
+# Get unique examiner first names
+examiner_names <- applications %>% distinct(examiner_name_first)
+
+# Predict gender based on first names
+examiner_names_gender <- examiner_names %>% 
+  do(results = gender(.$examiner_name_first, method = "ssa")) %>% 
+  unnest(cols = c(results), keep_empty = TRUE) %>% 
+  select(examiner_name_first = name, gender, proportion_female)
+
+# Join gender data back to the main applications dataset
+applications <- applications %>% 
+  left_join(examiner_names_gender, by = "examiner_name_first")
+```
+
+
+#### Add race variable
+
+We predict the race of each examiner based on their last name using the wru library. We join the predicted race data back to the main applications dataset.
+
+```{r add_race, warning=FALSE}
+# Get unique examiner last names
+examiner_surnames <- applications %>% select(surname = examiner_name_last) %>% distinct()
+
+# Predict race based on last names
+examiner_race <- predict_race(voter.file = examiner_surnames, surname.only = T) %>% as_tibble()
+
+# Select the race with the highest probability for each last name
+examiner_race <- examiner_race %>% 
+  mutate(max_race_p = pmax(pred.asi, pred.bla, pred.his, pred.oth, pred.whi)) %>% 
+  mutate(race = case_when(
+    max_race_p == pred.asi ~ "Asian",
+    max_race_p == pred.bla ~ "black",
+    max_race_p == pred.his ~ "Hispanic",
+    max_race_p == pred.oth ~ "other",
+    max_race_p == pred.whi ~ "white",
+    TRUE ~ NA_character_
+  ))
+
+# Join race data back to the main applications dataset
+applications <- applications %>% 
+  left_join(examiner_race, by = c("examiner_name_last" = "surname"))
+
+```
+
+
+#### Add tenure variable
+
+We calculate the tenure of each examiner by extracting the examiner IDs and application dates. We calculate the earliest and latest dates for each examiner and their tenure in days. We then join the tenure data back to the main applications dataset.
+
+```{r add_tenure, warning=FALSE}
+# Extract examiner IDs and application dates
+examiner_dates <- applications %>% 
+  select(examiner_id, filing_date, appl_status_date)
+
+# Convert dates to a consistent format
+examiner_dates <- examiner_dates %>% 
+  mutate(start_date = ymd(filing_date), end_date = as_date(dmy_hms(appl_status_date)))
+
+# Calculate the earliest and latest dates for each examiner and their tenure in days
+examiner_dates <- examiner_dates %>% 
+  group_by(examiner_id) %>% 
+  summarise(
+    earliest_date = min(start_date, na.rm = TRUE), 
+    latest_date = max(end_date, na.rm = TRUE),
+    tenure_days = interval(earliest_date, latest_date) %/% days(1)
+  ) %>% 
+  filter(year(latest_date)<2018)
+
+# Join tenure data back to the main applications dataset
+applications <- applications %>% left_join(examiner_dates, by = "examiner_id")
+```
+
+
+
+## Create Advice Networks and Calculate Centrality Scores
+This part of the R code uses the igraph and dplyr libraries to create an advice network from the edges_sample data and calculate centrality scores for all examiners.
+
+Load the required libraries - igraph and dplyr
+```{r network_1, message=FALSE, warning=FALSE}
+library(igraph)
+library(dplyr)
+```
+
+Create a list of unique examiner IDs from both the ego_examiner_id and alter_examiner_id columns using the unique function.Then, create an igraph object from the edges_sample data, specifying vertex names as the unique examiner IDs. This code creates an igraph object g from the edges_sample data, with the ego_examiner_id and alter_examiner_id columns as edges, and the unique examiner IDs as vertices.
+```{r network_2}
+unique_examiner_ids <- unique(c(edges_sample$ego_examiner_id, edges_sample$alter_examiner_id))
+
+g <- graph_from_data_frame(edges_sample[, c("ego_examiner_id", "alter_examiner_id")], directed = TRUE, vertices = data.frame(name = unique_examiner_ids))
+```
+
+Calculate the degree, betweenness, and closeness centralities for the entire dataset using the degree, betweenness, and closeness functions in igraph.This creates a data frame centrality_entire with the examiner IDs, degree centrality, betweenness centrality, and closeness centrality for all examiners in the dataset.
+```{r network_3}
+centrality_entire <- data.frame(
+  examiner_id = V(g)$name,
+  degree_centrality = degree(g, mode = "out"),
+  betweenness_centrality = betweenness(g, directed = TRUE),
+  closeness_centrality = closeness(g, mode = "out")
+)
+```
+
+Convert examiner_id in centrality_entire to double using the as.numeric function.After that join the centrality data back to the main applications dataset using the left_join function in dplyr.This adds the degree centrality, betweenness centrality, and closeness centrality columns to the applications dataset based on the examiner_id column.
+```{r network_4}
+centrality_entire$examiner_id <- as.numeric(centrality_entire$examiner_id)
+
+applications <- applications %>%
+  left_join(centrality_entire, by = "examiner_id")
+```
+
+
+
+## 1. Create variable for application processing time
+
+This section of the code creates a new variable in the applications dataset that measures the number of days from the application filing date until the final decision on it, which could either be a patent issue or abandonment.
+```{r Q1}
+# Calculate the processing time
+applications <- applications %>%
+  mutate(
+    final_decision_date = coalesce(patent_issue_date, abandon_date),
+    app_proc_time = as.numeric(difftime(final_decision_date, filing_date, units = "days"))
+  )
+```
+
+
+
+## 2. Linear regression models 
+
+Remove rows with missing values in degree, betweenness, or closeness centrality.
+```{r Q2_1}
+applications_clean <- applications %>%
+  filter(!is.na(degree_centrality),
+         !is.na(betweenness_centrality),
+         !is.na(closeness_centrality))
+```
+
+
+```{r degree_model}
+# Estimate the linear regression model with degree_centrality as the independent variable
+degree_model <- lm(
+  app_proc_time ~ degree_centrality + gender + race + tenure_days,
+  data = applications_clean
+)
+
+# Print the summary of the model
+summary(degree_model)
+```
+The degree_model includes degree_centrality, gender, race, and tenure_days as independent variables, and app_proc_time as the dependent variable. The adjusted R-squared value of the model is 0.005376, which means that only about 0.54% of the variation in app_proc_time can be explained by the model. This is quite low, indicating that the model does not fit the data well.
+
+
+```{r betweenness_model}
+# Betweenness centrality linear regression model
+betweenness_model <- lm(
+  app_proc_time ~ betweenness_centrality + gender + race + tenure_days,
+  data = applications_clean
+)
+summary(betweenness_model)
+```
+The betweenness_model includes betweenness_centrality, gender, race, and tenure_days as independent variables, and app_proc_time as the dependent variable. The adjusted R-squared value of the model is 0.005813, which is still low, suggesting that betweenness_centrality is not a good predictor of app_proc_time.
+
+
+```{r closeness_model}
+# Closeness centrality linear regression model
+closeness_model <- lm(
+  app_proc_time ~ closeness_centrality + gender + race + tenure_days,
+  data = applications_clean
+)
+summary(closeness_model)
+```
+The closeness_model includes closeness_centrality, gender, race, and tenure_days as independent variables, and app_proc_time as the dependent variable. The adjusted R-squared value of the model is 0.009607, which is slightly better than that of the betweenness_model, but still relatively low. This suggests that while closeness_centrality may have some predictive power for app_proc_time, it is not a strong predictor on its own.
+
+
+```{r combined_model, echo=FALSE}
+# Combined centrality linear regression model
+combined_model <- lm(
+  app_proc_time ~ degree_centrality + betweenness_centrality + closeness_centrality + gender + race + tenure_days,
+  data = applications_clean
+)
+summary(combined_model)
+```
+The combined model (including degree, betweenness, and closeness centralities) has an adjusted R-squared of 0.009789, while the closeness_model has an adjusted R-squared of 0.009607. Although the combined model has a slightly higher adjusted R-squared, the improvement is marginal.
+
+
+
+## 3. Does this relationship differ by examiner gender?
+
+The part of the code consists of four linear regression models in R, each with a different independent variable (degree centrality, betweenness centrality, closeness centrality, or a combination of all three) and interaction with gender. The dependent variable in each model is app_proc_time, which represents the time it takes for an application to be processed.
+
+
+```{r degree_gender_interaction}
+# Degree centrality model with interaction
+degree_gender_interaction <- lm(
+  app_proc_time ~ degree_centrality * gender + race + tenure_days,
+  data = applications_clean
+)
+summary(degree_gender_interaction)
+```
+The first model, degree_gender_interaction, shows that degree centrality is a statistically significant predictor of app_proc_time, with an estimated coefficient of 0.613. Gender is also a significant predictor, with male examiners taking longer to process applications than female examiners (coefficient of 36.75). There is a statistically significant interaction effect between degree centrality and gender, indicating that the relationship between degree centrality and app_proc_time depends on the gender of the examiner.
+
+```{r betweenness_gender_interaction}
+# Betweenness centrality model with interaction
+betweenness_gender_interaction <- lm(
+  app_proc_time ~ betweenness_centrality * gender + race + tenure_days,
+  data = applications_clean
+)
+summary(betweenness_gender_interaction)
+```
+The second model, betweenness_gender_interaction, shows that betweenness centrality is not a statistically significant predictor of app_proc_time, with an estimated coefficient of -0.000046. Gender is again a significant predictor, with male examiners taking longer to process applications than female examiners (coefficient of 20.81). There is a statistically significant interaction effect between betweenness centrality and gender, indicating that the relationship between betweenness centrality and app_proc_time depends on the gender of the examiner.
+
+```{r closeness_gender_interaction}
+# Closeness centrality model with interaction
+closeness_gender_interaction <- lm(
+  app_proc_time ~ closeness_centrality * gender + race + tenure_days,
+  data = applications_clean
+)
+summary(closeness_gender_interaction)
+```
+The third model, closeness_gender_interaction, shows that closeness centrality is a statistically significant predictor of app_proc_time, with an estimated coefficient of -107.2. Gender is also a significant predictor, with male examiners taking longer to process applications than female examiners (coefficient of 31.6). There is a statistically significant interaction effect between closeness centrality and gender, indicating that the relationship between closeness centrality and app_proc_time depends on the gender of the examiner.
+
+```{r combined_gender_interaction}
+# Combined model with interaction
+combined_gender_interaction <- lm(
+  app_proc_time ~ (degree_centrality + betweenness_centrality + closeness_centrality) * gender + race + tenure_days,
+  data = applications_clean
+)
+summary(combined_gender_interaction)
+```
+Based on the output from the fourth (combined) model with gender interactions, it seems that the relationship between centrality measures and app_proc_time does indeed differ by examiner gender. The interaction terms for all three centrality measures with gender (degree_centrality:gendermale, betweenness_centrality:gendermale, and closeness_centrality:gendermale) are statistically significant with p-values less than 0.05:
+
+1. degree_centrality:gendermale: Estimate = -6.084e-01, p-value < 2e-16
+2. betweenness_centrality:gendermale: Estimate = 3.139e-03, p-value < 2e-16
+3. closeness_centrality:gendermale: Estimate = -1.936e+01, p-value = 0.000167
+
+These results suggest that the relationship between centrality measures and application processing time does differ between male and female examiners. In other words, the effect of centrality on app_proc_time is not consistent across examiner gender.
+
+
+
+## 4. Discussion
+
+The findings of this exercise suggest that there is a relationship between the centrality of patent examiners and the processing time of patent applications. Specifically, the results indicate that degree centrality, betweenness centrality, and closeness centrality are all weak predictors of application processing time, with adjusted R-squared values ranging from 0.005376 to 0.009789. However, when examining the relationship between centrality and processing time by examiner gender, the results suggest that this relationship is not consistent across gender. The interaction terms between gender and each of the three centrality measures are all statistically significant, indicating that the effect of centrality on processing time is different for male and female examiners.
+
+These findings have important implications for the USPTO. First, the relatively weak relationship between centrality measures and application processing time suggests that other factors, beyond examiner centrality, are likely driving variations in processing time. Second, the results showing differences in the effect of centrality on processing time by gender raise concerns about potential inequities in the agency's decision-making process. This finding suggests that the USPTO may need to examine its policies and practices around examiner mobility, promotion, and attrition, and how they may differ by gender and other demographic characteristics. Addressing any potential inequities in these areas could help to reduce processing time and improve the agency's ability to support innovation and economic growth.
