@@ -84,73 +84,26 @@ applications <- applications %>% left_join(examiner_dates, by = "examiner_id")
 library(igraph)
 library(dplyr)
 
-## Plot advice networks
+# Create a list of unique examiner IDs from both ego_examiner_id and alter_examiner_id columns
+unique_examiner_ids <- unique(c(edges_sample$ego_examiner_id, edges_sample$alter_examiner_id))
 
-# Create an igraph object from the edges_sample data
-g <- graph_from_data_frame(edges_sample[, c("ego_examiner_id", "alter_examiner_id")], directed = TRUE)
+# Create an igraph object from the edges_sample data, specifying vertex names
+g <- graph_from_data_frame(edges_sample[, c("ego_examiner_id", "alter_examiner_id")], directed = TRUE, vertices = data.frame(name = unique_examiner_ids))
 
-# Extract the first 3 digits of examiner_art_unit values
-applications$workgroup <- substr(applications$examiner_art_unit, 1, 3)
-
-# Create a mapping between examiner_id and workgroup in the applications dataset
-examiner_workgroup_mapping <- applications %>%
-  select(examiner_id, workgroup) %>%
-  distinct()
-
-# Add attributes to vertices in the network
-V(g)$workgroup <- examiner_workgroup_mapping$workgroup[match(V(g)$name, examiner_workgroup_mapping$examiner_id)]
-
-# Set plot options
-par(mar = c(0, 0, 0, 0))
-set.seed(123)
-
-# Create the plot
-plot(g,
-     vertex.color = "lightblue",
-     vertex.label = NA,
-     vertex.size = 5,
-     edge.arrow.size = 0.5,
-     main = "Advice Networks for All Workgroups")
-
-## Calculate centrality scores for all examiners
-
-# Calculate Degree, Betweenness and Closeness Centrality
-degree_centrality <- degree(g, mode = "all")
-betweenness_centrality <- betweenness(g, directed = TRUE)
-closeness_centrality <- closeness(g, mode = "all")
-
-# Add the centrality scores to the vertex attributes
-V(g)$degree_centrality <- degree_centrality
-V(g)$betweenness_centrality <- betweenness_centrality
-V(g)$closeness_centrality <- closeness_centrality
-
-# Merge centrality scores with the examiners' characteristics
-centrality_scores <- data.frame(
-  examiner_id = as.numeric(V(g)$name), # Convert examiner_id to numeric
-  workgroup = V(g)$workgroup,
-  degree_centrality = V(g)$degree_centrality,
-  betweenness_centrality = V(g)$betweenness_centrality
+# Calculate degree, betweenness, and closeness centrality for the entire dataset
+centrality_entire <- data.frame(
+  examiner_id = V(g)$name,
+  degree_centrality = degree(g, mode = "out"),
+  betweenness_centrality = betweenness(g, directed = TRUE),
+  closeness_centrality = closeness(g, mode = "out")
 )
 
-applications_centrality <- applications %>%
-  select(examiner_id, gender, race, tenure_days) %>%
-  mutate(examiner_id = as.numeric(examiner_id)) %>% # Convert examiner_id to numeric
-  inner_join(centrality_scores, by = "examiner_id")
+# Convert examiner_id in centrality_entire to double
+centrality_entire$examiner_id <- as.numeric(centrality_entire$examiner_id)
 
-closeness_scores <- data.frame(
-  examiner_id = as.numeric(V(g)$name), # Convert examiner_id to numeric
-  closeness_centrality = V(g)$closeness_centrality
-)
-
-applications_centrality <- applications_centrality %>%
-  inner_join(closeness_scores, by = "examiner_id")
-
-# Remove rows with missing values in degree, betweenness, or closeness centrality
-applications_centrality_complete <- applications_centrality %>%
-  drop_na(degree_centrality, betweenness_centrality, closeness_centrality)
-
-# Examine the results
-print(applications_centrality_complete)
+# Join the centrality data back to the main applications dataset
+applications <- applications %>%
+  left_join(centrality_entire, by = "examiner_id")
 
 
 
@@ -165,20 +118,79 @@ applications <- applications %>%
     app_proc_time = as.numeric(difftime(final_decision_date, filing_date, units = "days"))
   )
 
-# Merge applications and applications_centrality_complete datasets using an inner join
-merged_data <- applications %>%
-  select(examiner_id, app_proc_time) %>%
-  inner_join(applications_centrality_complete, by = "examiner_id")
-
 
 
 ### 2. Linear regression models 
 
+# Remove rows with missing values in degree, betweenness, or closeness centrality
+applications_clean <- applications %>%
+  filter(!is.na(degree_centrality),
+         !is.na(betweenness_centrality),
+         !is.na(closeness_centrality))
+
 # Estimate the linear regression model with degree_centrality as the independent variable
 degree_model <- lm(
   app_proc_time ~ degree_centrality + gender + race + tenure_days,
-  data = merged_data
+  data = applications_clean
 )
 
 # Print the summary of the model
 summary(degree_model)
+# The model has very low explanatory power. The adjusted R-squared value is 0.005376, which means that only about 0.54% of the variation in app_proc_time can be explained by the model. This is quite low, indicating that the model does not fit the data well.
+
+
+# Betweenness centrality linear regression model
+betweenness_model <- lm(
+  app_proc_time ~ betweenness_centrality + gender + race + tenure_days,
+  data = applications_clean
+)
+summary(betweenness_model)
+
+
+# Closeness centrality linear regression model
+closeness_model <- lm(
+  app_proc_time ~ closeness_centrality + gender + race + tenure_days,
+  data = applications_clean
+)
+summary(closeness_model)
+
+
+# Combined centrality linear regression model
+combined_model <- lm(
+  app_proc_time ~ degree_centrality + betweenness_centrality + closeness_centrality + gender + race + tenure_days,
+  data = applications_clean
+)
+summary(combined_model)
+# The combined model (including degree, betweenness, and closeness centralities) has an adjusted R-squared of 0.009789, while the closeness_model has an adjusted R-squared of 0.009607. Although the combined model has a slightly higher adjusted R-squared, the improvement is marginal.
+
+
+
+### 3. Does this relationship differ by examiner gender?
+
+# Degree centrality model with interaction
+degree_gender_interaction <- lm(
+  app_proc_time ~ degree_centrality * gender + race + tenure_days,
+  data = applications_clean
+)
+summary(degree_gender_interaction)
+
+# Betweenness centrality model with interaction
+betweenness_gender_interaction <- lm(
+  app_proc_time ~ betweenness_centrality * gender + race + tenure_days,
+  data = applications_clean
+)
+summary(betweenness_gender_interaction)
+
+# Closeness centrality model with interaction
+closeness_gender_interaction <- lm(
+  app_proc_time ~ closeness_centrality * gender + race + tenure_days,
+  data = applications_clean
+)
+summary(closeness_gender_interaction)
+
+# Combined model with interaction
+combined_gender_interaction <- lm(
+  app_proc_time ~ (degree_centrality + betweenness_centrality + closeness_centrality) * gender + race + tenure_days,
+  data = applications_clean
+)
+summary(combined_gender_interaction)
