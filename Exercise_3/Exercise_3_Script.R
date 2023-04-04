@@ -10,8 +10,8 @@ library(gender)
 library(wru)
 
 # Load data
-applications <- read_parquet("C:/Users/ulyan/OneDrive - McGill University/Documents/MMA/Winter II 2023/Org Network Analysis/Exercise 3/672_project_data/app_data_sample.parquet")
-edges_sample <- read_csv("C:/Users/ulyan/OneDrive - McGill University/Documents/MMA/Winter II 2023/Org Network Analysis/Exercise 3/672_project_data/edges_sample.csv")
+applications <- read_parquet("app_data_sample.parquet")
+edges_sample <- read_csv("edges_sample.csv")
 
 
 ## Add gender variable
