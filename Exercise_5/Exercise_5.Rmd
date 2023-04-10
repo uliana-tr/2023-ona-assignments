@@ -1,0 +1,47 @@
+---
+title: 'Exercise 5: Complex contagion'
+author: "Liliana Tretyakova"
+date: "2023-04-10"
+output: pdf_document
+---
+
+## Complex Contagion and its Difference from Simple Contagion
+
+Complex contagion refers to the diffusion of behaviours, ideas, or innovations within social networks, where an individual's decision to adopt a behaviour is influenced by the number of peers who have already adopted it (Centola, 2018). This process requires reinforcement from multiple sources within the network, making it a slower and more selective process. 
+
+Simple contagion, on the other hand, is a process in which an individual is influenced by a single source within their social network to adopt a behaviour or idea. This process is relatively fast and widespread, as it requires minimal exposure to influence an individual. However, while simple contagion can spread rapidly, it does not have a lasting effect on our thoughts or behaviour (Centola, 2018). Examples of simple contagion include the spread of viral content or simple information.
+
+
+## Complex Contagion and the Diffusion of Behaviors in Organizations
+
+Organizations are social networks where complex contagions play a crucial role in the diffusion of behaviours (Centola, 2018). Unlike simple contagions, complex contagions in organizations often involve adopting new practices, policies, or cultural norms that require a behaviour change. The complex contagion process is influenced by factors such as interpersonal connections, network structures, and thresholds of influence among individuals (Centola, 2018).
+
+As the "Explainable" game highlights, having too few connections between people can hinder the spread of complex ideas, while too many connections may lead to groupthink, crushing the potential for innovation. The key is to establish a small world network, achieving an optimal balance between bonding and bridging connections (Nick, 2018). This balance allows for the effective diffusion of complex ideas within organizations.
+
+Threshold models are also particularly relevant in understanding the diffusion of behaviours within organizations. The threshold represents the proportion of an individual's network connections that must adopt a behaviour before they also adopt it (Centola, 2018). A higher threshold indicates a greater level of reinforcement needed for an individual to adopt a new behaviour. In comparison, a lower threshold signifies that an individual is more likely to adopt a behaviour with minimal exposure to it.
+
+
+## Managing Prosocial Behavior, Learning, and Toxic or Unproductive Behaviors in Organizations
+
+### Prosocial Behavior
+
+Encouraging prosocial behaviours in organizations involves identifying and leveraging key individuals or groups within the social network, where the strong and broad currents of social change take hold and expand. Organizations can foster positive change in areas such as collaboration, teamwork, and ethical conduct by targeting individuals with the right network position and influence. This approach involves understanding the existing network structure, identifying key individuals or groups, and designing interventions that capitalize on these connections (Centola, 2018).
+
+### Learning
+
+Complex contagion can also be harnessed to promote learning in organizations. Organizations can create an environment where employees can learn from one another by identifying network structures that facilitate sharing of knowledge and expertise. In line with the "Explainable" game's emphasis on the importance of a balanced mix of bonding within groups and bridging between groups for disseminating new ideas, organizations can create a conducive learning atmosphere. This can be accomplished through initiatives such as mentorship programs, cross-functional teams, or training sessions that unite employees from diverse backgrounds and skill sets. These efforts promote a collaborative and interconnected learning culture that maintains the right balance between connections.
+
+### Toxic or Unproductive Behaviors
+
+Managing toxic or unproductive behaviours involves identifying the network patterns that contribute to the spread of these behaviours and designing interventions that disrupt these patterns. By recognizing the role of complex contagions in the propagation of negative behaviours, organizations can take a proactive approach to prevent or mitigate their impact. This may involve altering network structures, implementing policies that discourage toxic behaviours, or providing support and resources for employees to overcome challenges.
+
+
+In conclusion, understanding complex contagion and its role in the diffusion of behaviours in organizations can help leaders better manage prosocial behaviour, learning, and toxic or unproductive behaviours. By leveraging threshold models and insights from the science of social networks, organizations can create targeted interventions that foster positive change and drive success.
+
+
+
+### Works Cited
+
+Centola, Damon. "The Spread of Behavior in an Online Social Network Experiment." Science, vol. 329, no. 5996, 2010, pp. 1194–1197.
+
+Nick, Explainable. "Game: The Wisdom and/or Madness of Crowds." Nicky Case, 2018, <https://ncase.me/crowds/>.
